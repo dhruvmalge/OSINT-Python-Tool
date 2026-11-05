@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card" style="max-width: 580px; margin: 40px auto; text-align: center; padding: 36px 28px;">
+  <div style="font-size: 2.5rem; margin-bottom: 12px;">🔗</div>
+  <h1 style="font-size: 1.5rem; margin-bottom: 12px;">You're opening a shared link</h1>
+  <p class="muted" style="margin-bottom: 24px;">This link is managed by <strong>{{ link.title }}</strong>.</p>
+  
+  <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; text-align: left; font-size: 0.875rem; color: #0369a1; margin-bottom: 24px;">
+    <strong>Privacy Notice:</strong> If you accept analytics, approximate location/ISP data (via IP lookup) and device specifications (screen, language, timezone, browser) are shared with the link owner. Raw IP addresses are never saved.
+  </div>
+
+  <form method="post" id="consentForm" onsubmit="fillConsentFields()">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="screen" id="screen">
+    <input type="hidden" name="language" id="language">
+    <input type="hidden" name="timezone" id="timezone">
+    <div style="display: flex; gap: 12px; flex-direction: column;">
+      <button name="consent" value="yes" type="submit" style="width: 100%; justify-content: center; padding: 12px;">
+        Continue with analytics
+      </button>
+      <button class="secondary" name="consent" value="no" type="submit" style="width: 100%; justify-content: center; padding: 12px;">
+        Continue without analytics
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+function fillConsentFields() {
+  document.getElementById('screen').value = screen.width + 'x' + screen.height;
+  document.getElementById('language').value = navigator.language || '';
+  document.getElementById('timezone').value = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+}
+</script>
+{% endblock %}

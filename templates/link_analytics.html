@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block body %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+  <div>
+    <h1>Analytics: {{ link.title }}</h1>
+    <p class="muted">Destination: <a href="{{ link.destination }}" target="_blank">{{ link.destination }}</a></p>
+  </div>
+  <a class="btn secondary" href="/dashboard">← Back to Dashboard</a>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="muted">Total Visits</div>
+    <div class="metric">{{ total_visits }}</div>
+  </div>
+  <div class="card">
+    <div class="muted">Unique Visitors</div>
+    <div class="metric">{{ unique_visits }}</div>
+  </div>
+  <div class="card">
+    <div class="muted">Campaign</div>
+    <div style="font-size: 1.25rem; font-weight: 600; margin-top: 8px;">{{ link.campaign or 'None' }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Recent Visits for this Link</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Time (UTC)</th>
+        <th>Type</th>
+        <th>Location</th>
+        <th>ISP / VPN</th>
+        <th>Device / Browser</th>
+        <th>UTM Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for visit in visits %}
+      <tr>
+        <td>{{ visit.visited_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td><span class="badge {{ 'active' if visit.is_unique else 'paused' }}">{{ 'Unique' if visit.is_unique else 'Repeat' }}</span></td>
+        <td>{{ [visit.city, visit.region, visit.country]|reject('equalto','')|join(', ') or 'Unknown' }}</td>
+        <td>{{ visit.isp or 'N/A' }} {% if visit.vpn == 'yes' %}<span class="badge paused">VPN</span>{% endif %}</td>
+        <td>{{ visit.device }} ({{ visit.browser }} / {{ visit.os }})</td>
+        <td>{{ visit.utm_source or '—' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">No visits recorded for this link yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

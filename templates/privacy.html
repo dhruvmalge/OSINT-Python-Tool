@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% block body %}
+<div class="card"><h1>Privacy notice</h1>
+<p>This service records analytics only when a visitor selects “Continue with analytics.”
+Choosing “Continue without analytics” redirects without creating a visit record.</p>
+<h2>Data collected after consent</h2>
+<p>Visit time; browser, operating system and device category inferred from the browser's
+User-Agent; optional screen dimensions, language and time zone; and referring hostname
+when supplied by the browser. If IP lookup is enabled, the visitor's IP is sent to
+ipwho.is to obtain approximate country, region, city, ISP and proxy/VPN/Tor indicators.
+The raw IP is not stored in this application's analytics database. The lookup provider
+has its own privacy policy and processing practices.</p>
+<h2>Retention and controls</h2>
+<p>Records older than {{ retention }} days are deleted when the dashboard is opened.
+Administrators can export visit records as CSV and should delete exports when no longer
+needed. Disable IP enrichment by setting <code>GEO_LOOKUP=0</code>.</p>
+<h2>Limitations</h2>
+<p>IP geolocation is approximate and can be wrong, especially with VPNs, mobile networks
+and corporate gateways. ISP and VPN classification may be unavailable or inaccurate.
+This service does not collect GPS coordinates, access a camera or microphone, or attempt
+to identify a person.</p>
+<p>The site operator is responsible for providing any legally required notice, obtaining
+valid consent, setting a lawful retention period and responding to data requests.</p>
+</div>{% endblock %}

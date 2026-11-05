@@ -1,0 +1,154 @@
+{% extends "base.html" %}{% block body %}
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+  <div>
+    <h1>Cybersecurity Intelligence Dashboard</h1>
+    <p class="muted">Monitor threat feeds, telemetry tracking links, and honeypot canaries.</p>
+  </div>
+  <div class="actions">
+    <a class="btn secondary" href="/export.pdf">📥 Download PDF Report</a>
+    <a class="btn secondary" href="/export.csv">📊 Export CSV Log</a>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="muted">Total Telemetry Hits</div>
+    <div class="metric">{{ total }}</div>
+  </div>
+  <div class="card">
+    <div class="muted">Hits (Last 30 Days)</div>
+    <div class="metric">{{ recent }}</div>
+  </div>
+  <div class="card">
+    <div class="muted">Active Links / Canaries</div>
+    <div class="metric">{{ links|selectattr('active')|list|length }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Traffic & Telemetry Volume (Last 14 Days UTC)</h2>
+  <canvas id="visitsChart" height="90"></canvas>
+</div>
+
+<div class="card">
+  <h2>Deploy a New Tracking Link or Canary Trap</h2>
+  <form method="post" action="/links/create">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 12px;">
+      <label>Link Title / Label<input name="title" maxlength="120" placeholder="Phishing Simulation Campaign #1" required></label>
+      <label>Destination URL<input name="destination" type="url" placeholder="https://example.com/landing-page" required></label>
+    </div>
+    <div class="grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+      <label>Campaign / Tag<input name="campaign" maxlength="120" placeholder="red-team-2026"></label>
+      <label>Expiration Date<input name="expires_at" type="datetime-local"></label>
+      <label>Access Password (Optional)<input name="password" type="password" placeholder="Leave blank if public"></label>
+    </div>
+    <div style="margin: 10px 0;">
+      <label style="display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer;">
+        <input type="checkbox" name="is_honeypot" style="width: auto; margin: 0;"> Mark as Security Honeypot / Canary Trap (+40 Threat Score)
+      </label>
+    </div>
+    <button type="submit">Create Intelligence Link</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Active Links & Canaries</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Title / Destination</th>
+        <th>Campaign</th>
+        <th>Short / Canary URL</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for link in links %}
+      <tr>
+        <td>
+          <strong><a href="/links/{{ link.id }}/analytics">{{ link.title }}</a></strong><br>
+          <span class="muted small">{{ link.destination }}</span>
+        </td>
+        <td>{{ link.campaign or '—' }}</td>
+        <td><a href="{{ base }}/r/{{ link.slug }}" target="_blank">{{ base }}/r/{{ link.slug }}</a></td>
+        <td>{% if link.is_honeypot %}<span class="badge paused" style="background:#fee2e2; color:#991b1b;">Honeypot</span>{% else %}<span class="badge active">Standard</span>{% endif %}</td>
+        <td>{{ 'Active' if link.active else 'Paused' }}</td>
+        <td>
+          <div class="actions">
+            <a class="btn secondary" href="/links/{{ link.id }}/analytics">Stats</a>
+            <a class="btn secondary" href="/links/{{ link.id }}/qr.png">QR</a>
+            <form method="post" action="/links/{{ link.id }}/toggle" style="margin:0;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="secondary">{{ 'Pause' if link.active else 'Activate' }}</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">No tracking links created yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Recent Consented Telemetry Logs</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Time (UTC)</th>
+        <th>Link</th>
+        <th>Location</th>
+        <th>Risk Score</th>
+        <th>ISP / VPN</th>
+        <th>Device / Browser</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for visit, link in latest %}
+      <tr>
+        <td>{{ visit.visited_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ link.title }}</td>
+        <td>{{ [visit.city, visit.region, visit.country]|reject('equalto','')|join(', ') or 'Unavailable' }}</td>
+        <td>
+          {% if visit.threat_score > 50 %}
+            <span class="badge" style="background:#fee2e2; color:#991b1b;">High ({{ visit.threat_score }})</span>
+          {% else %}
+            <span class="badge" style="background:#f1f5f9; color:#475569;">Low ({{ visit.threat_score }})</span>
+          {% endif %}
+        </td>
+        <td>{{ visit.isp or 'Unavailable' }} {% if visit.vpn == 'yes' %}<span class="badge paused">VPN</span>{% endif %}</td>
+        <td>{{ visit.device }} ({{ visit.browser }} / {{ visit.os }})</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">No telemetry logs recorded yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('visitsChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ daily|map(attribute='day')|list|tojson }},
+    datasets: [{
+      label: 'Telemetry Hits',
+      data: {{ daily|map(attribute='count')|list|tojson }},
+      backgroundColor: '#4f46e5',
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: { beginAtZero: true, ticks: { precision: 0 } }
+    }
+  }
+});
+</script>
+{% endblock %}
