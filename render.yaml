@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: consent-link-analytics
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    healthCheckPath: /health
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASSWORD_HASH
+        value: "scrypt:32768:8:1$gVjXTP60mVbu5uBx$f6626dbf976fcfd384375bc0a2c920cfe3d0702c9de0373ab18a8a59dbdce7e512f422fade0b3f04a808e87fc6f1c1e7f81bf192125f72cfe678935270c7b3f4"
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: TRUST_PROXY
+        value: "1"
+      - key: COOKIE_SECURE
+        value: "1"
+      - key: GEO_LOOKUP
+        value: "1"
+      - key: RETENTION_DAYS
+        value: "90"
+      - key: DATABASE_URL
+        sync: false
